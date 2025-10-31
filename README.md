@@ -184,4 +184,4 @@ The core problem this project aims to solve is:
 - Real-time race predictions
 - Strategy simulation capabilities
 
-
+## inputs outputs and flow chart
