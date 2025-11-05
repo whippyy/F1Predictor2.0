@@ -184,4 +184,125 @@ The core problem this project aims to solve is:
 - Real-time race predictions
 - Strategy simulation capabilities
 
-## inputs outputs and flow chart
+## User Interface Flow
+
+### Main Page Layout
+```
++------------------------------------------+
+|              F1 Predictor 2.0            |
++------------------------------------------+
+|                                          |
+|  +----------------------------------+    |
+|  |           Top 3 Drivers          |    |
+|  |----------------------------------|    |
+|  | 1. [Driver Name]     [Points]    |    |
+|  | 2. [Driver Name]     [Points]    |    |
+|  | 3. [Driver Name]     [Points]    |    |
+|  +----------------------------------+    |
+|                                          |
+|  +----------------------------------+    |
+|  |         Remaining Drivers        |    |
+|  |----------------------------------|    |
+|  | 4. [Driver Name]     [Points]    |    |
+|  | 5. [Driver Name]     [Points]    |    |
+|  |            ...                   |    |
+|  | 20.[Driver Name]     [Points]    |    |
+|  +----------------------------------+    |
+|                                          |
++------------------------------------------+
+```
+
+### User Interaction Flow
+```
+                    Main Page
+                       |
+            +---------+---------+
+            |                   |
+     Click Driver Card    Click Race Card
+            |                   |
+    +-------+-------+    +-----+-----+
+    |               |    |           |
+Driver Predictions  |    |  Race     |
+- Season Overview   |    |  Results  |
+- Qualifying Pred.  |    |  - Grid   |
+- Race Predictions  |    |  - Result |
+- Points Projection |    |  - Times  |
+    |               |    |           |
+    +-------+-------+    +-----------+
+            |
+    Click Specific Race
+            |
+    +-------+-------+
+    |               |
+Detailed Analysis
+- Qual Prediction
+- Race Prediction
+- Lap Time Pred.
+- Position Changes
+```
+
+### Interactive Elements
+
+1. **Driver Cards**
+   ```
+   +-------------------------+
+   |     [Driver Photo]      |
+   |   [Driver Name]        |
+   |   [Team]              |
+   |   [Current Points]    |
+   |   [Current Position]  |
+   +-------------------------+
+   ```
+   - Clickable to view detailed predictions
+   - Color-coded by team
+   - Dynamic updates with new predictions
+
+2. **Race Cards**
+   ```
+   +-------------------------+
+   |     [Circuit Layout]    |
+   |   [Race Name]          |
+   |   [Date]              |
+   |   [Prediction Status]  |
+   +-------------------------+
+   ```
+   - Shows upcoming/completed status
+   - Displays prediction confidence
+   - Links to detailed race analysis
+
+3. **Detailed Race View**
+   ```
+   +--------------------------------+
+   |        [Circuit Name]          |
+   |--------------------------------|
+   | Qualifying    Race      Points |
+   | Prediction    Prediction       |
+   |                               |
+   | [Timeline of Position Changes] |
+   |                               |
+   | [Lap Time Predictions Graph]   |
+   +--------------------------------+
+   ```
+
+### Navigation Flow
+1. **Entry Point**
+   - User lands on main page showing championship standings
+   - Top 3 drivers prominently displayed
+   - Remaining drivers listed below
+
+2. **Driver Details Flow**
+   - Click on driver card
+   - View season predictions
+   - Navigate through race-by-race analysis
+   - Access historical performance data
+
+3. **Race Details Flow**
+   - Click on race card
+   - View complete race weekend predictions
+   - Access detailed timing information
+   - Compare driver performances
+
+4. **Update Cycle**
+   - Real-time updates after each session
+   - Prediction adjustments based on new data
+   - Historical accuracy tracking
