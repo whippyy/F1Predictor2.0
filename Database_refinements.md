@@ -17,3 +17,38 @@ Decide surrogate keys (serial/UUID) vs natural keys. Surrogates (int or UUID) ar
 Use appropriate DBML types: int, varchar, timestamp, float, boolean, jsonb (if DBML supports it).
 Normalization vs denormalization:
 For reads (UI top-3, standings) it's helpful to maintain materialized views or denormalized cache tables rather than recompute heavy aggregates.
+
+
+Short guidance questions for you (answer these briefly so I can push back):
+
+Which queries do you need most often? (List 4 — e.g., "top 3 drivers this season", "driver race history", "lap-by-lap for a race", "predictions per race")
+Do you expect lap_time to be the largest table (many millions)? How many lap rows per season roughly?
+Do drivers change teams mid-season in your data? (This affects whether team_id belongs on driver row or in a join table.)
+How important is write/ingest speed vs strict foreign keys? (Do you want fast ingest or strong referential integrity?)
+Exercises for you (do these; then paste results and I will review):
+
+Exercise 1 — Identify cardinalities: For each pair below write 1:N or N:M:
+Team ↔ Driver
+Race ↔ Track
+Driver ↔ Race (participation / results)
+Season ↔ Race
+Exercise 2 — Rewrite your lap_time table to include the fields above (race_id, session_id, driver_id, lap_number, lap_time_ms, timestamp, tire_compound, pit_stop) in DBML.
+Exercise 3 — Write the prediction table in DBML tied to model_version and include a JSONB extra field for full distribution; add a uniqueness constraint to prevent duplicate predictions for same model/timestamp.
+Exercise 4 — For race_result, list 5 constraints or indexes you would create (e.g., unique(race_id, position), index(race_id, driver_id), etc.) and explain why.
+
+Indexing & performance checklist (for when you implement DDL)
+
+Index: (season_id, points DESC) materialized view or cache for standings.
+Index: lap_time on (race_id, driver_id, lap_number) and possibly composite (race_id, driver_id) for aggregations.
+Partition: lap_time by race_id or by time range (season) — choose depending on your query patterns.
+Use GIN index if you use jsonb for predictions/metrics.
+Consider pgvector if you want to store model embeddings.
+Security & operational notes
+
+Keep staging tables for raw feed ingestion, validate, then insert into production tables.
+Use migrations (Alembic / Flyway).
+Use role separation (app_readonly, app_write, db_admin).
+Next steps (pick one):
+
+Option A: Implement the 4 exercises above and paste the DBML snippets; I will review and provide corrections.
+Option B: Tell me the top 4 queries you need and I’ll suggest the minimal set of indexes and constraints (I’ll still push you to implement them).
