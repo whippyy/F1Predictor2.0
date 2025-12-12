@@ -2,6 +2,28 @@
 
 A machine learning-based Formula 1 race prediction system for the 2025 season.
 
+## Database Schema
+
+The project uses PostgreSQL with a comprehensive database schema. For detailed information:
+
+- **[schema.sql](./database/schema.sql)** - Complete SQL schema with all tables, indexes, and triggers
+- **[SCHEMA_DOCUMENTATION.md](./database/SCHEMA_DOCUMENTATION.md)** - In-depth documentation of design decisions, entity relationships, and performance considerations
+- **[QUICK_REFERENCE.md](./database/QUICK_REFERENCE.md)** - Quick reference for common queries and operations
+- **[seed_data.sql](./database/seed_data.sql)** - Sample data for testing and development
+
+### Quick Start
+
+```bash
+# Make setup script executable
+chmod +x database/setup_database.sh
+
+# Run initial setup
+database/setup_database.sh f1predictor f1_app localhost 5432
+
+# Load sample data (optional)
+psql -h localhost -U f1_app -d f1predictor -f database/seed_data.sql
+```
+
 ## Problem Statement
 
 The core problem this project aims to solve is:
