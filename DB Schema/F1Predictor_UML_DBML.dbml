@@ -1,0 +1,416 @@
+"""
+F1 Predictor 2.0 - Database Schema in DBML (Database Markup Language)
+Version: 1.0
+Last Updated: 2025-12-17
+Database: PostgreSQL 12+
+
+This DBML can be visualized at: https://dbdiagram.io/d/
+Import this content into dbdiagram.io for interactive entity relationship diagram
+"""
+
+// ============================================================================
+// FOUNDATIONAL TABLES
+// ============================================================================
+
+Table season {
+  id int [pk, increment]
+  year int [unique, not null]
+  name varchar(50) [not null]
+  rounds int [not null]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (year) [name: "idx_season_year"]
+  }
+}
+
+Table driver {
+  id int [pk, increment]
+  full_name varchar(255) [not null]
+  code varchar(3) [unique, not null]
+  driver_number int
+  date_of_birth date
+  nationality varchar(100)
+  headshot_url varchar(500)
+  license_number varchar(50) [unique]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (code) [name: "idx_driver_code"]
+    (nationality) [name: "idx_driver_nationality"]
+  }
+}
+
+Table team {
+  id int [pk, increment]
+  name varchar(255) [unique, not null]
+  short_name varchar(50) [unique, not null]
+  team_color varchar(7) // Hex color
+  logo_url varchar(500)
+  headquarters varchar(255)
+  founded_year int
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (short_name) [name: "idx_team_short_name"]
+  }
+}
+
+Table driver_team {
+  id int [pk, increment]
+  driver_id int [not null, ref: > driver.id]
+  team_id int [not null, ref: > team.id]
+  season_id int [not null, ref: > season.id]
+  start_date date [not null]
+  end_date date
+  role varchar(50) [default: 'race_driver']
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (season_id) [name: "idx_driver_team_season"]
+    (driver_id, season_id) [name: "idx_driver_team_driver_season", unique]
+    (team_id, season_id) [name: "idx_driver_team_team_season"]
+  }
+}
+
+Table track {
+  id int [pk, increment]
+  name varchar(255) [unique, not null]
+  country varchar(100) [not null]
+  city varchar(100)
+  location varchar(255)
+  length_m float [not null]
+  turns int
+  corners int
+  drs_zones int
+  latitude float
+  longitude float
+  circuit_url varchar(500)
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (country) [name: "idx_track_country"]
+    (latitude, longitude) [name: "idx_track_location"]
+  }
+}
+
+Table race {
+  id int [pk, increment]
+  season_id int [not null, ref: > season.id]
+  track_id int [not null, ref: > track.id]
+  round int [not null]
+  name varchar(255) [not null]
+  race_date date [not null]
+  sprint_race boolean [default: false]
+  wiki_url varchar(500)
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (season_id) [name: "idx_race_season"]
+    (track_id) [name: "idx_race_track"]
+    (race_date) [name: "idx_race_date"]
+    (season_id, round) [name: "idx_race_season_round", unique]
+  }
+}
+
+// ============================================================================
+// SESSION & TIMING TABLES
+// ============================================================================
+
+Table session {
+  id int [pk, increment]
+  race_id int [not null, ref: > race.id]
+  session_type varchar(50) [not null] // practice1, practice2, practice3, qualifying, race, sprint
+  started_at timestamp
+  ended_at timestamp
+  weather_condition varchar(50) // dry, wet, damp
+  track_temperature_c float
+  air_temperature_c float
+  status varchar(50) [default: 'scheduled']
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (race_id) [name: "idx_session_race"]
+    (session_type) [name: "idx_session_type"]
+  }
+}
+
+Table tire_compound {
+  id int [pk, increment]
+  name varchar(50) [unique, not null]
+  code varchar(5)
+  color varchar(7) // Hex color
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table lap_time {
+  id bigint [pk, increment]
+  race_id int [not null, ref: > race.id]
+  session_id int [not null, ref: > session.id]
+  driver_id int [not null, ref: > driver.id]
+  lap_number int [not null]
+  lap_time_ms int // Milliseconds
+  sector1_ms int
+  sector2_ms int
+  sector3_ms int
+  tire_compound_id int [ref: > tire_compound.id]
+  pit_stop boolean [default: false]
+  pit_loss_ms int
+  is_fastest_lap boolean [default: false]
+  status varchar(50) // valid, invalid, outlap, inlap
+  recorded_at timestamp [default: `CURRENT_TIMESTAMP`]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (race_id, driver_id) [name: "idx_lap_time_race_driver"]
+    (session_id) [name: "idx_lap_time_session"]
+    (driver_id) [name: "idx_lap_time_driver"]
+    (race_id, lap_number) [name: "idx_lap_time_lap_number"]
+    (recorded_at) [name: "idx_lap_time_recorded"]
+  }
+  
+  Note: "Largest, highest-volume table - millions of rows per season"
+}
+
+// ============================================================================
+// RESULTS TABLES
+// ============================================================================
+
+Table qualifying_result {
+  id bigint [pk, increment]
+  race_id int [not null, ref: > race.id]
+  driver_id int [not null, ref: > driver.id]
+  q1_time_ms int
+  q2_time_ms int
+  q3_time_ms int
+  qualifying_position int [not null]
+  status varchar(50) // complete, dnf, dsq
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (race_id) [name: "idx_qualifying_race"]
+    (driver_id) [name: "idx_qualifying_driver"]
+    (race_id, qualifying_position) [name: "idx_qualifying_position", unique]
+  }
+}
+
+Table race_result {
+  id bigint [pk, increment]
+  race_id int [not null, ref: > race.id]
+  driver_id int [not null, ref: > driver.id]
+  grid_position int [not null]
+  finish_position int
+  points_awarded float [default: 0]
+  laps_completed int
+  race_status varchar(50) // finished, dnf, dsq, not_classified
+  fastest_lap boolean [default: false]
+  pit_stops int [default: 0]
+  total_race_time varchar(50)
+  time_behind_leader_ms int
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (race_id) [name: "idx_race_result_race"]
+    (driver_id) [name: "idx_race_result_driver"]
+    (race_id, finish_position) [name: "idx_race_result_position", unique]
+    (race_id, points_awarded DESC) [name: "idx_race_result_points"]
+  }
+}
+
+// ============================================================================
+// PREDICTION & MODEL TABLES
+// ============================================================================
+
+Table model_version {
+  id int [pk, increment]
+  name varchar(255) [not null]
+  version varchar(50) [unique, not null]
+  description text
+  model_type varchar(100) // tensorflow, xgboost, ensemble, etc.
+  training_data_start_year int
+  training_data_end_year int
+  trained_at timestamp [not null]
+  accuracy float
+  precision float
+  recall float
+  f1_score float
+  metrics jsonb
+  is_active boolean [default: false]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (is_active) [name: "idx_model_version_active"]
+    (trained_at) [name: "idx_model_version_trained"]
+  }
+}
+
+Table prediction {
+  id bigint [pk, increment]
+  model_version_id int [not null, ref: > model_version.id]
+  race_id int [not null, ref: > race.id]
+  driver_id int [not null, ref: > driver.id]
+  predicted_qualifying_position int
+  predicted_race_position int
+  predicted_points float
+  win_probability float // 0.0 to 1.0
+  podium_probability float
+  confidence_score float // 0.0 to 1.0 - overall confidence
+  qualifying_confidence float
+  race_confidence float
+  extra_data jsonb // Full probability distribution
+  generated_at timestamp [not null]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (model_version_id) [name: "idx_prediction_model"]
+    (race_id) [name: "idx_prediction_race"]
+    (driver_id) [name: "idx_prediction_driver"]
+    (confidence_score DESC) [name: "idx_prediction_confidence"]
+    (generated_at) [name: "idx_prediction_generated"]
+    (model_version_id, race_id, driver_id) [name: "idx_prediction_model_race_driver"]
+  }
+}
+
+// ============================================================================
+// MATERIALIZED VIEWS / CACHE TABLES
+// ============================================================================
+
+Table season_standings_cache {
+  id int [pk, increment]
+  season_id int [not null, ref: > season.id]
+  driver_id int [not null, ref: > driver.id]
+  team_id int [ref: > team.id]
+  position int [not null]
+  total_points float [not null]
+  wins int [default: 0]
+  podiums int [default: 0]
+  races_completed int [default: 0]
+  cached_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (season_id) [name: "idx_standings_cache_season"]
+    (season_id, position) [name: "idx_standings_cache_position"]
+  }
+  
+  Note: "Denormalized cache - updated nightly for performance"
+}
+
+Table top3_cache {
+  id int [pk, increment]
+  season_id int [not null, ref: > season.id]
+  rank int [not null, check: "rank >= 1 AND rank <= 3"]
+  driver_id int [not null, ref: > driver.id]
+  team_id int [ref: > team.id]
+  total_points float [not null]
+  wins int
+  cached_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (season_id, rank) [name: "idx_top3_cache_season_rank", unique]
+  }
+  
+  Note: "Quick access cache for top 3 drivers - updated after each race"
+}
+
+Table race_prediction_summary {
+  id int [pk, increment]
+  model_version_id int [not null, ref: > model_version.id]
+  race_id int [not null, ref: > race.id]
+  total_predictions int
+  avg_confidence float
+  generated_at timestamp [not null]
+  cached_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: "Summary cache for quick access to prediction metadata"
+}
+
+// ============================================================================
+// AUDIT & LOGGING TABLES
+// ============================================================================
+
+Table audit_log {
+  id bigint [pk, increment]
+  table_name varchar(255) [not null]
+  operation varchar(50) [not null] // INSERT, UPDATE, DELETE
+  record_id int
+  old_values jsonb
+  new_values jsonb
+  changed_by varchar(255)
+  changed_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (table_name) [name: "idx_audit_log_table"]
+    (changed_at) [name: "idx_audit_log_timestamp"]
+  }
+}
+
+Table model_run_log {
+  id int [pk, increment]
+  model_version_id int [not null, ref: > model_version.id]
+  started_at timestamp [not null]
+  completed_at timestamp
+  status varchar(50) // running, completed, failed
+  predictions_generated int
+  error_message text
+  execution_time_seconds float
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+// ============================================================================
+// RELATIONSHIP NOTES
+// ============================================================================
+
+/*
+KEY RELATIONSHIPS:
+
+1. Season → Race → Track
+   - A season contains multiple races
+   - Each race occurs at a track
+   - Same track can host races in multiple seasons
+
+2. Driver-Team Association (N:M with temporal scope)
+   - Driver_Team acts as junction table
+   - Scoped by season (driver can have only 1 team per season)
+   - Drivers can change teams across seasons
+
+3. Race → Session → Lap_Time
+   - A race has multiple sessions (FP1, FP2, FP3, Q, Sprint, Race)
+   - Each session contains thousands to millions of lap records
+   - Lap_Time is the high-volume transactional table
+
+4. Results Tables (Qualifying_Result, Race_Result)
+   - One record per driver per race
+   - Unique constraints prevent duplicates
+   - Tied to qualifying and main race sessions
+
+5. Predictions (ML Model Output)
+   - Model_Version tracks different ML model iterations
+   - Prediction stores per-driver, per-race predictions
+   - Includes confidence scores and probability distributions
+
+6. Cache Tables (Performance Optimization)
+   - Season_Standings_Cache: Championship standings snapshot
+   - Top3_Cache: Quick access to top 3 drivers
+   - Race_Prediction_Summary: Prediction metadata aggregates
+
+7. Audit Trail
+   - Audit_Log: Tracks all significant changes
+   - Model_Run_Log: Tracks ML model execution
+
+DATA VOLUME:
+- Lap_Time: ~10-15M records per season (HIGH VOLUME)
+- Prediction: ~2.4M records per season per model (scales with models)
+- All others: <100K records per season
+*/
