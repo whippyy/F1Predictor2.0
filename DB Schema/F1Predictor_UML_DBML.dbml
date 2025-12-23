@@ -310,7 +310,7 @@ Table season_standings_cache {
 Table top3_cache {
   id int [pk, increment]
   season_id int [not null, ref: > season.id]
-  rank int [not null, check: "rank >= 1 AND rank <= 3"]
+  rank int [not null, note: "CHECK (rank >= 1 AND rank <= 3)"]
   driver_id int [not null, ref: > driver.id]
   team_id int [ref: > team.id]
   total_points float [not null]
